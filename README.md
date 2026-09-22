@@ -1,20 +1,20 @@
-# N-Body Spaceflight Sim — real orbital mechanics in the browser
+# N-Body Spaceflight Sim - orbital mechanics in the browser
 
-> A Kerbal-Space-Program-style sandbox that flies a craft through the **real solar system with full n-body gravitation**: 31 bodies seeded from JPL Horizons state vectors, a symplectic integrator running in a Web Worker, maneuver nodes, SAS, a transfer-window planner, and enough time warp to fly Earth → Mars → Phobos.
+> A spaceflight sandbox inspired by Kerbal Space Program. It simulates 31 solar-system bodies using JPL Horizons data and n-body gravity in a Web Worker. You can fly a craft, plan maneuvers and transfers, and use time warp for trips between planets and moons.
 
-🔗 **Live demo:** not yet hosted publicly — a browser build is planned for [bretmerritt.com](https://www.bretmerritt.com).
+**Live demo:** Not yet public. A browser build is planned for [bretmerritt.com](https://www.bretmerritt.com).
 
-This repo is an overview of a closed-source project. The source is private — I'm happy to walk through it in an interview.
+This repository describes the simulator. The source code is private.
 
 <p align="center">
-  <img src="screenshots/map-view.png" width="900" alt="Map view — orbit around Earth">
+  <img src="screenshots/map-view.png" width="900" alt="Map view of an orbit around Earth">
 </p>
 
 ---
 
 ## Overview
 
-No ship building, no career mode, no science — just a pre-built craft and a physically honest solar system. Every massive body pulls on every other body every step (Principia-style), rather than the patched-conic approximation most games use, and the simulation runs at a fixed rate in a worker so the main thread never blocks even at 100,000× time warp.
+The simulator focuses on flying a pre-built craft. It has no ship builder, career mode, or science progression. At each step, it calculates the gravitational pull between every pair of massive bodies, as in Principia, instead of using patched-conic approximations. Physics runs at a fixed rate in a worker, separate from rendering and input, with time warp up to 100,000×.
 
 ## Screenshots
 
@@ -28,14 +28,14 @@ No ship building, no career mode, no science — just a pre-built craft and a ph
 
 ## Features
 
-- **Real solar system** — 31 bodies (Sun, planets, major moons) with real masses, radii, and rotation, seeded from JPL Horizons J2000 state vectors.
-- **N-body physics** — a Blanes & Moan symplectic Runge–Kutta–Nyström integrator on Float64 typed arrays, in a **Web Worker** (Comlink RPC); an RK4 fallback for verification and an adaptive integrator for trajectory prediction.
-- **Flight** — attitude, throttle, RCS translation, and a full SAS suite (stability, prograde/retrograde, normal/anti-normal, radial in/out, target/anti-target, maneuver hold) with KSP-standard keyboard and gamepad bindings.
-- **Navball and map view** — Three.js rendering with a **floating origin and logarithmic depth buffer** so float32 precision holds across a 10¹³ m range; orbit lines, periapsis/apoapsis markers, and a live trajectory prediction.
-- **Maneuver nodes** — create, drag-edit (prograde/normal/radial gizmos), and execute; burn-duration estimates from the craft's real thrust.
-- **Transfer-window planner** — simple and advanced modes: porkchop-style departure scrubber, Hohmann and Izzo–Lambert solutions, LEO ejection Δv, and "warp to transfer".
-- **Dynamic spheres of influence** — the craft's dominant body switches live as it crosses SOIs; the HUD, map, and planner all follow.
-- **Time warp** 1× – 100,000×, quicksave/quickload and named saves (IndexedDB, compressed with pako, versioned schema with migrators), a pause menu, touch controls, and an in-game performance HUD.
+- **Solar system:** 31 bodies (the Sun, planets, and major moons) with real masses, radii, and rotation, initialized from JPL Horizons J2000 state vectors.
+- **N-body physics:** A Blanes and Moan symplectic Runge-Kutta-Nyström integrator uses Float64 typed arrays in a Web Worker with Comlink RPC. An RK4 fallback is available for verification, and an adaptive integrator predicts trajectories.
+- **Flight controls:** Attitude, throttle, RCS translation, and SAS modes for stability, prograde/retrograde, normal/anti-normal, radial in/out, target/anti-target, and maneuver hold. Controls use KSP-style keyboard and gamepad bindings.
+- **Navball and map view:** Three.js rendering with a floating origin and logarithmic depth buffer to handle a 10¹³ m range. The map shows orbit lines, periapsis and apoapsis markers, and predicted trajectories.
+- **Maneuver nodes:** Create, drag, and execute nodes using prograde, normal, and radial controls. Burn-duration estimates use the craft's thrust.
+- **Transfer planner:** Simple and advanced modes with a porkchop-style departure scrubber, Hohmann and Izzo-Lambert solutions, LEO ejection Δv, and "warp to transfer".
+- **Spheres of influence:** The craft's dominant body changes as it crosses an SOI boundary. The HUD, map, and planner update to match.
+- **Time warp and saves:** Time warp from 1× to 100,000×, quicksave/quickload, and named saves in IndexedDB. Saves use pako compression and a versioned schema with migrations. The app also has a pause menu, touch controls, and a performance HUD.
 
 ## Technologies
 
@@ -43,19 +43,19 @@ TypeScript (strict) · Vite · Three.js · Web Workers + Comlink · gl-matrix ·
 
 ## Engineering notes
 
-- **Physics in a worker, rendering on the main thread.** The integrator needs tens of thousands of steps per second at high warp; keeping it off the main thread is what keeps input lag and frame drops away.
-- **Prediction is its own worker** and its polyline reuses one persistent GPU buffer across updates instead of reallocating ~50 kB of geometry per refresh.
-- **Precision at solar-system scale.** A floating origin keeps the craft near (0,0,0) in the renderer while the simulation stays in the solar-system barycentric frame.
-- **Tests as the safety net for math.** ~390 unit tests cover the integrators, Kepler/Lambert solvers, SOI transitions, save migrations, and input routing — a physics bug that produced silent NaN positions was caught by adding a test, not by staring at the screen.
-- The project was run from a written spec with phased acceptance criteria and a deferred-items backlog; every phase shipped with type-check + tests green.
+- **Physics worker:** High time warp requires tens of thousands of integration steps per second. Running those steps in a worker keeps that calculation off the thread handling input and rendering.
+- **Prediction worker:** Trajectory prediction runs in a separate worker. Its polyline reuses a GPU buffer instead of allocating about 50 kB of geometry on each refresh.
+- **Coordinate precision:** A floating origin keeps the craft near (0,0,0) for rendering, while the simulation uses solar-system barycentric coordinates.
+- **Tests:** About 390 unit tests cover the integrators, Kepler and Lambert solvers, SOI changes, save migrations, and input routing. One test exposed a physics bug that produced NaN positions without a visible error.
+- I worked from a written specification with acceptance criteria for each phase and a backlog for later features. Each phase passed type checks and tests before I moved on.
 
 ## Status
 
-Built April 2026 (118 commits, ~23k lines of TypeScript). Earlier iterations explored a compressed "mini" scale before committing to real SI units; a sibling project ("Orbital") uses patched conics with a Lambert autopilot that flies Earth → Mars end-to-end, and a Unity/C# prototype ("Artemis Sim") explored the same design natively.
+Built April 2026 (118 commits, about 23k lines of TypeScript). Earlier versions used a smaller, compressed solar system before I switched to real SI units. A related project, Orbital, uses patched conics and a Lambert autopilot for Earth-to-Mars flights. I also explored the design in a Unity/C# prototype called Artemis Sim.
 
-## Process
+## Development
 
-Built solo with Claude Code as a pair-programmer, working from a spec I wrote with explicit acceptance criteria per phase.
+I built the simulator using Claude Code for coding assistance, following the specification and acceptance criteria I wrote.
 
 ---
 
