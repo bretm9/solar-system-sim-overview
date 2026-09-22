@@ -2,8 +2,6 @@
 
 > A spaceflight sandbox inspired by Kerbal Space Program. It simulates 31 solar-system bodies using JPL Horizons data and n-body gravity in a Web Worker. You can fly a craft, plan maneuvers and transfers, and use time warp for trips between planets and moons.
 
-**Live demo:** Not yet public. A browser build is planned for [bretmerritt.com](https://www.bretmerritt.com).
-
 This repository describes the simulator. The source code is private.
 
 <p align="center">
@@ -55,7 +53,7 @@ Built April 2026 (118 commits, about 23k lines of TypeScript). Earlier versions 
 
 ## Development
 
-I built the simulator using Claude Code for coding assistance, following the specification and acceptance criteria I wrote.
+I built the simulator following the specification and acceptance criteria I wrote.
 
 ---
 
